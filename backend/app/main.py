@@ -10,6 +10,7 @@ from fastapi import BackgroundTasks, FastAPI, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.concurrency import run_in_threadpool
 
 from .remediation.pipeline import RemediationError, run as run_pipeline
 
@@ -86,7 +87,10 @@ async def convert(file: UploadFile, background_tasks: BackgroundTasks):
         await file.close()
 
     try:
-        report = run_pipeline(str(input_path), str(output_path), file.filename)
+        # PDF tagging/OCR-alt-text work is CPU- and I/O-bound and synchronous;
+        # run it off the event loop so one conversion can't stall every other
+        # request being served by this process.
+        report = await run_in_threadpool(run_pipeline, str(input_path), str(output_path), file.filename)
     except RemediationError as exc:
         _delete_job_files(input_path, output_path)
         raise HTTPException(status_code=422, detail=str(exc)) from exc
