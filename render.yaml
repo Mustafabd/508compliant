@@ -1,0 +1,40 @@
+# Render Blueprint. In the Render dashboard: New -> Blueprint -> select this
+# repo. It provisions the web service and a managed Postgres database wired
+# together automatically; secrets marked `sync: false` need to be pasted in
+# under the web service's Environment tab after the first deploy (never
+# committed to git). See DEPLOY.md for the full walkthrough.
+databases:
+  - name: 508compliant-db
+    plan: starter
+
+services:
+  - type: web
+    name: 508compliant
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    plan: starter
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: 508compliant-db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      # Set to this service's public Render URL once you know it
+      # (e.g. https://508compliant.onrender.com) -- used to build Stripe
+      # checkout/portal redirect URLs.
+      - key: APP_BASE_URL
+        sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: STRIPE_PRICE_ID
+        sync: false
+      # Optional: enables real AI-generated image alt text instead of
+      # placeholders. Leave unset to skip that feature.
+      - key: ANTHROPIC_API_KEY
+        sync: false

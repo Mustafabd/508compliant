@@ -33,12 +33,23 @@ not a guarantee of semantic correctness. Every conversion returns a report
 that says exactly what needs manual review. Treat the output as a strong
 head start on 508/WCAG compliance, not a certification.
 
+It's also a small SaaS: accounts, a free tier (3 conversions/month), and a
+Stripe-billed Pro tier (unlimited conversions).
+
 ## Architecture
 
 ```
-frontend/          static HTML/CSS/JS single-page upload UI
+frontend/
+  index.html          marketing landing page
+  app.html             the converter tool (requires login)
+  login.html, signup.html
+  auth.js               shared session/billing helpers
 backend/app/
   main.py                 FastAPI app: /api/convert, /api/download/{id}
+  db.py, models.py         SQLAlchemy engine + User/UsageEvent models
+  auth.py, routes_auth.py  password hashing, signed session cookies, signup/login/logout/me
+  billing.py, routes_billing.py   Stripe checkout/portal/webhook
+  usage.py                 free-tier monthly conversion counting + limit enforcement
   remediation/
     content.py            content-stream segmentation + BDC/EMC tagging
     tagger.py              builds the StructTreeRoot/ParentTree across the doc
@@ -51,7 +62,10 @@ backend/app/
 Built on [pikepdf](https://github.com/pikepdf/pikepdf) (qpdf) for all PDF
 structure/content manipulation and [pypdf](https://github.com/py-pdf/pypdf)
 for text sampling — no system binaries (no Poppler/Ghostscript/Tesseract)
-are required to run it.
+are required to run it. Accounts/sessions are a signed httpOnly cookie (no
+Redis/session store); billing is Stripe Checkout + Billing Portal for one
+flat recurring "Pro" price — the free tier's cap is enforced app-side by
+counting conversions, not Stripe metered billing.
 
 ## Running locally
 
@@ -61,20 +75,33 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 
-# Optional: enables real AI-generated alt text for images.
-export ANTHROPIC_API_KEY=sk-...
+cp .env.example .env   # fill in SECRET_KEY / Stripe keys as needed — see below
 
 uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
 
 Then open http://localhost:8000 — the FastAPI app serves the frontend
-directly, so there's nothing else to start.
+directly, so there's nothing else to start. Without `DATABASE_URL` set it
+uses a local SQLite file; without the `STRIPE_*` vars set, signup/login and
+conversions work fine and the free-tier limit still applies, but
+`/api/billing/*` returns a clear "not configured" error instead of crashing.
+
+## Deploying
+
+See [DEPLOY.md](DEPLOY.md) for the full Stripe + Render/Railway walkthrough
+— `Dockerfile`, `render.yaml`, and `railway.json` are ready to go, but
+Stripe and hosting accounts (and their secret keys) have to be created and
+wired up by you.
 
 ## Limits
 
 - 25 MB max upload size, 300 pages max per document (configurable in
   `backend/app/main.py` / `backend/app/remediation/pipeline.py`).
+- Free plan: 3 conversions/month per account; Pro plan (Stripe subscription):
+  unlimited.
 - Uploaded and converted files are stored in `backend/jobs/` and deleted
   automatically after 30 minutes.
 - Password-protected PDFs are rejected with a clear error; remove the
   password before uploading.
+- No email verification or password-reset flow yet (see DEPLOY.md's notes
+  section).

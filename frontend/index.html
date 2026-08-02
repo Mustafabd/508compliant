@@ -3,73 +3,147 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>508 Accessible PDF Converter</title>
-  <meta name="description" content="Upload a PDF and automatically tag it for Section 508 / WCAG accessibility: headings, alt text, reading order, title, and language.">
+  <title>508Compliant — Automated PDF Accessibility Remediation</title>
+  <meta name="description" content="Upload a PDF, get back a Section 508 / WCAG-tagged version with alt text, headings, and a compliance report. Built for compliance and content teams with PDF backlogs.">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to main content</a>
 
   <header class="site-header">
-    <div class="wrap">
-      <p class="logo">508<span>Compliant</span></p>
-      <p class="tagline">Automated PDF accessibility remediation</p>
+    <div class="wrap header-row">
+      <a class="logo" href="/">508<span>Compliant</span></a>
+      <nav class="top-nav" aria-label="Account">
+        <a href="/login.html">Log in</a>
+        <a href="/signup.html" class="link-button link-button-accent">Sign up free</a>
+      </nav>
     </div>
   </header>
 
-  <main id="main" class="wrap">
-    <section class="intro">
-      <h1>Make your PDF Section 508 &amp; WCAG accessible</h1>
-      <p>
-        Upload a PDF and this tool will automatically add a tagged structure
-        (headings, paragraphs, figures), generate image alt text, set the
-        document title and language, and give you a report of anything that
-        still needs a human look.
+  <main id="main">
+    <section class="hero wrap">
+      <h1>Turn your PDF backlog into Section 508 &amp; WCAG compliant documents — automatically</h1>
+      <p class="hero-sub">
+        Upload a PDF. Get back a properly tagged, screen-reader-ready version
+        with headings, image alt text, document language and title, plus a
+        plain-English report of exactly what was fixed and what still needs a
+        human look.
       </p>
+      <div class="hero-actions">
+        <a href="/signup.html" class="cta-button">Start free — 3 conversions/month</a>
+        <a href="#how-it-works" class="cta-secondary">See how it works</a>
+      </div>
     </section>
 
-    <section aria-labelledby="upload-heading">
-      <h2 id="upload-heading" class="visually-hidden">Upload a PDF</h2>
+    <section class="section wrap" aria-labelledby="why-heading">
+      <h2 id="why-heading">Why compliance teams keep this around</h2>
+      <div class="feature-grid">
+        <div class="feature">
+          <h3>508/WCAG backlogs are expensive to clear by hand</h3>
+          <p>
+            Manually tagging headings, writing alt text, and fixing reading
+            order for hundreds of legacy PDFs is slow, repetitive work.
+            This automates the bulk of it in seconds per document.
+          </p>
+        </div>
+        <div class="feature">
+          <h3>ADA/508 exposure is a real legal risk</h3>
+          <p>
+            Untagged, inaccessible PDFs on a public or internal site are a
+            common target for accessibility complaints and lawsuits.
+            Closing the gap on your existing library reduces that exposure.
+          </p>
+        </div>
+        <div class="feature">
+          <h3>Procurement and grants often require it</h3>
+          <p>
+            Government contracts, higher-ed material, and many grant-funded
+            programs require documents to meet Section 508/WCAG 2.1 AA —
+            this gets a document most of the way there before a final review.
+          </p>
+        </div>
+        <div class="feature">
+          <h3>You get a report, not just a promise</h3>
+          <p>
+            Every conversion returns a checklist of what was fixed
+            automatically and what still needs a human — no false sense of
+            "certified compliant" on something no one reviewed.
+          </p>
+        </div>
+      </div>
+    </section>
 
-      <form id="upload-form">
-        <label for="file-input" id="dropzone" class="dropzone">
-          <svg aria-hidden="true" viewBox="0 0 24 24" width="40" height="40">
-            <path fill="currentColor" d="M12 2a1 1 0 0 1 1 1v10.59l2.3-2.3a1 1 0 1 1 1.4 1.42l-4 4a1 1 0 0 1-1.4 0l-4-4a1 1 0 1 1 1.4-1.42l2.3 2.3V3a1 1 0 0 1 1-1Zm-7 16a1 1 0 0 1 1 1v1h12v-1a1 1 0 1 1 2 0v2a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-2a1 1 0 0 1 1-1Z"/>
-          </svg>
-          <span class="dropzone-text">
-            <strong>Choose a PDF</strong> or drag and drop it here
+    <section id="how-it-works" class="section wrap" aria-labelledby="how-heading">
+      <h2 id="how-heading">How it works</h2>
+      <ol class="steps">
+        <li>
+          <strong>Upload a PDF.</strong>
+          <span>Drag and drop, up to 25 MB and 300 pages.</span>
+        </li>
+        <li>
+          <strong>We tag it.</strong>
+          <span>
+            Headings, paragraphs, and figures are rewritten into a real PDF
+            structure tree with marked content — not just a "tagged" flag.
+            Images get alt text, and title/language metadata is set.
           </span>
-          <span class="dropzone-hint">Up to 25 MB, up to 300 pages</span>
-          <input id="file-input" name="file" type="file" accept="application/pdf,.pdf">
-        </label>
-
-        <p id="file-chosen" class="file-chosen" aria-live="polite"></p>
-
-        <button id="submit-btn" type="submit" disabled>Convert to accessible PDF</button>
-      </form>
-
-      <p id="status" class="status" role="status" aria-live="polite"></p>
+        </li>
+        <li>
+          <strong>Download and review.</strong>
+          <span>
+            Get the remediated PDF plus a report of what was automated and
+            what still needs a manual check — reading order on complex
+            layouts, table headers, color contrast, and form labels aren't
+            automatically verified.
+          </span>
+        </li>
+      </ol>
     </section>
 
-    <section id="results" class="results" hidden aria-labelledby="results-heading">
-      <h2 id="results-heading">Accessibility report</h2>
-      <p id="results-summary"></p>
-      <ul id="checklist" class="checklist"></ul>
-      <a id="download-link" class="download-button" href="#">Download accessible PDF</a>
+    <section id="pricing" class="section wrap" aria-labelledby="pricing-heading">
+      <h2 id="pricing-heading">Pricing</h2>
+      <div class="pricing-grid">
+        <div class="price-card">
+          <h3>Free</h3>
+          <p class="price">$0<span>/month</span></p>
+          <ul>
+            <li>3 PDF conversions per month</li>
+            <li>Full tagging, alt text &amp; metadata remediation</li>
+            <li>Accessibility report on every conversion</li>
+          </ul>
+          <a href="/signup.html" class="cta-button">Sign up free</a>
+        </div>
+        <div class="price-card price-card-featured">
+          <h3>Pro</h3>
+          <p class="price">Unlimited<span> conversions</span></p>
+          <ul>
+            <li>Everything in Free</li>
+            <li>Unlimited PDF conversions</li>
+            <li>Priority support</li>
+          </ul>
+          <a href="/signup.html" class="cta-button">Start free, upgrade anytime</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="section wrap" aria-labelledby="honesty-heading">
+      <h2 id="honesty-heading">What this tool doesn't do</h2>
+      <p class="honesty-text">
+        Reading order and heading levels are inferred heuristically (font
+        size and content order) — they aren't a guarantee of semantic
+        correctness for complex or multi-column layouts. Color contrast,
+        table row/column headers, form field labels, and document
+        outline/bookmarks are not automatically checked. Treat every
+        conversion as a strong head start, and review the report before
+        publishing anything you're relying on for compliance.
+      </p>
     </section>
   </main>
 
   <footer class="site-footer">
     <div class="wrap">
-      <p>
-        This tool automates what can be reliably automated. It does not check
-        color contrast, table headers, form field labels, or verify that
-        headings and reading order are semantically correct — always review
-        the output before publishing a document.
-      </p>
+      <p>508Compliant automates what can be reliably automated in PDF accessibility remediation. It is not a substitute for a manual accessibility audit.</p>
     </div>
   </footer>
-
-  <script src="app.js"></script>
 </body>
 </html>
