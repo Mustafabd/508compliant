@@ -4,15 +4,22 @@ import logging
 import re
 import time
 import uuid
+from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import BackgroundTasks, FastAPI, HTTPException, UploadFile
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, UploadFile
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
+from sqlalchemy.orm import Session
 from starlette.concurrency import run_in_threadpool
 
+from . import usage
+from .auth import get_current_user
+from .db import get_db, init_db
+from .models import User
 from .remediation.pipeline import RemediationError, run as run_pipeline
+from .routes_auth import router as auth_router
+from .routes_billing import router as billing_router, webhook_router
 
 logger = logging.getLogger("uvicorn.error")
 
@@ -24,14 +31,23 @@ JOBS_DIR = BASE_DIR / "jobs"
 JOBS_DIR.mkdir(exist_ok=True)
 STATIC_DIR = BASE_DIR.parent / "frontend"
 
-app = FastAPI(title="508 PDF Accessibility Converter")
+# job_id -> owning user id, so a download link can't be used by anyone but
+# the user who created it. In-memory and process-local, same as the rest of
+# this app's single-instance assumptions (see auth.py).
+_job_owners: dict[str, int] = {}
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["GET", "POST"],
-    allow_headers=["*"],
-)
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    init_db()
+    yield
+
+
+app = FastAPI(title="508 PDF Accessibility Converter", lifespan=lifespan)
+
+app.include_router(auth_router)
+app.include_router(billing_router)
+app.include_router(webhook_router)
 
 
 def _safe_stem(filename: str) -> str:
@@ -46,6 +62,7 @@ def _cleanup_stale_jobs() -> None:
         try:
             if path.stat().st_mtime < cutoff:
                 path.unlink(missing_ok=True)
+                _job_owners.pop(path.stem.split("_")[0], None)
         except OSError:
             pass
 
@@ -59,8 +76,14 @@ def _delete_job_files(*paths: Path) -> None:
 
 
 @app.post("/api/convert")
-async def convert(file: UploadFile, background_tasks: BackgroundTasks):
+async def convert(
+    file: UploadFile,
+    background_tasks: BackgroundTasks,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
     _cleanup_stale_jobs()
+    usage.enforce_limit_or_raise(db, user)
 
     if not file.filename or not file.filename.lower().endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Please upload a .pdf file.")
@@ -104,6 +127,8 @@ async def convert(file: UploadFile, background_tasks: BackgroundTasks):
         ) from None
 
     background_tasks.add_task(_delete_job_files, input_path)
+    _job_owners[job_id] = user.id
+    usage.record_usage(db, user, file.filename)
 
     download_name = f"{_safe_stem(file.filename)}-accessible.pdf"
     return JSONResponse({
@@ -114,9 +139,11 @@ async def convert(file: UploadFile, background_tasks: BackgroundTasks):
 
 
 @app.get("/api/download/{job_id}")
-async def download(job_id: str, name: str = "document-accessible.pdf"):
+async def download(job_id: str, name: str = "document-accessible.pdf", user: User = Depends(get_current_user)):
     if not re.fullmatch(r"[a-f0-9]{32}", job_id):
         raise HTTPException(status_code=404, detail="Not found.")
+    if _job_owners.get(job_id) != user.id:
+        raise HTTPException(status_code=404, detail="This download has expired. Please convert the file again.")
     output_path = JOBS_DIR / f"{job_id}_out.pdf"
     if not output_path.exists():
         raise HTTPException(status_code=404, detail="This download has expired. Please convert the file again.")

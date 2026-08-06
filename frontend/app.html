@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>508 Accessible PDF Converter</title>
+  <meta name="description" content="Upload a PDF and automatically tag it for Section 508 / WCAG accessibility: headings, alt text, reading order, title, and language.">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to main content</a>
+
+  <header class="site-header">
+    <div class="wrap header-row">
+      <a class="logo" href="/">508<span>Compliant</span></a>
+      <div id="account-bar" class="account-bar" aria-live="polite"></div>
+    </div>
+  </header>
+
+  <main id="main" class="wrap">
+    <section class="intro">
+      <h1>Convert a PDF</h1>
+      <p>
+        Upload a PDF and this tool will automatically add a tagged structure
+        (headings, paragraphs, figures), generate image alt text, set the
+        document title and language, and give you a report of anything that
+        still needs a human look.
+      </p>
+    </section>
+
+    <p id="checkout-banner" class="status" role="status" hidden></p>
+
+    <section aria-labelledby="upload-heading">
+      <h2 id="upload-heading" class="visually-hidden">Upload a PDF</h2>
+
+      <form id="upload-form">
+        <label for="file-input" id="dropzone" class="dropzone">
+          <svg aria-hidden="true" viewBox="0 0 24 24" width="40" height="40">
+            <path fill="currentColor" d="M12 2a1 1 0 0 1 1 1v10.59l2.3-2.3a1 1 0 1 1 1.4 1.42l-4 4a1 1 0 0 1-1.4 0l-4-4a1 1 0 1 1 1.4-1.42l2.3 2.3V3a1 1 0 0 1 1-1Zm-7 16a1 1 0 0 1 1 1v1h12v-1a1 1 0 1 1 2 0v2a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-2a1 1 0 0 1 1-1Z"/>
+          </svg>
+          <span class="dropzone-text">
+            <strong>Choose a PDF</strong> or drag and drop it here
+          </span>
+          <span class="dropzone-hint">Up to 25 MB, up to 300 pages</span>
+          <input id="file-input" name="file" type="file" accept="application/pdf,.pdf">
+        </label>
+
+        <p id="file-chosen" class="file-chosen" aria-live="polite"></p>
+
+        <button id="submit-btn" type="submit" disabled>Convert to accessible PDF</button>
+      </form>
+
+      <p id="status" class="status" role="status" aria-live="polite"></p>
+    </section>
+
+    <section id="results" class="results" hidden aria-labelledby="results-heading">
+      <h2 id="results-heading">Accessibility report</h2>
+      <p id="results-summary"></p>
+      <ul id="checklist" class="checklist"></ul>
+      <a id="download-link" class="download-button" href="#">Download accessible PDF</a>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <p>
+        This tool automates what can be reliably automated, including
+        automated WCAG color-contrast checks. It does not check table
+        headers, form field labels, or verify that headings and reading
+        order are semantically correct — always review the output before
+        publishing a document.
+      </p>
+    </div>
+  </footer>
+
+  <script src="auth.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -4,7 +4,7 @@ from __future__ import annotations
 import pikepdf
 from pypdf import PdfReader
 
-from . import alttext, metadata, report, tagger
+from . import alttext, contrast, metadata, report, tagger
 
 MAX_PAGES = 300
 
@@ -45,6 +45,7 @@ def run(input_path: str, output_path: str, filename: str) -> dict:
 
         alt_gen = alttext.AltTextGenerator()
         stats = tagger.tag_pdf(pdf, alt_gen)
+        contrast_stats = contrast.check_pdf(pdf)
 
         sample_text = _sample_text(input_path)
         title, title_guessed = metadata.guess_title(pdf, filename)
@@ -64,4 +65,5 @@ def run(input_path: str, output_path: str, filename: str) -> dict:
         language_confident=lang_confident,
         stats=stats,
         scanned_pages=stats.pages_with_no_text,
+        contrast_stats=contrast_stats,
     )

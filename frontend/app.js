@@ -9,8 +9,26 @@
   const resultsSummary = document.getElementById("results-summary");
   const checklistEl = document.getElementById("checklist");
   const downloadLink = document.getElementById("download-link");
+  const accountBar = document.getElementById("account-bar");
+  const checkoutBanner = document.getElementById("checkout-banner");
 
   let selectedFile = null;
+
+  (async () => {
+    const user = await requireLogin();
+    if (!user) return; // requireLogin already redirected to /login.html
+    renderAccountBar(accountBar, user);
+
+    const checkoutResult = new URLSearchParams(window.location.search).get("checkout");
+    if (checkoutResult === "success") {
+      checkoutBanner.hidden = false;
+      checkoutBanner.setAttribute("data-state", "done");
+      checkoutBanner.textContent = "Thanks for subscribing! It may take a few seconds for your Pro plan to show up below.";
+    } else if (checkoutResult === "cancelled") {
+      checkoutBanner.hidden = false;
+      checkoutBanner.textContent = "Checkout cancelled — you're still on the free plan.";
+    }
+  })();
 
   function setStatus(text, state) {
     statusEl.textContent = text;
@@ -96,8 +114,26 @@
     formData.append("file", selectedFile);
 
     try {
-      const res = await fetch("/api/convert", { method: "POST", body: formData });
+      const res = await fetch("/api/convert", { method: "POST", body: formData, credentials: "same-origin" });
       const data = await res.json().catch(() => null);
+
+      if (res.status === 401) {
+        window.location.href = "/login.html?next=/app.html";
+        return;
+      }
+
+      if (res.status === 402) {
+        setStatus((data && data.detail) || "You've reached your free plan limit.", "error");
+        const upgradeBtn = document.createElement("button");
+        upgradeBtn.type = "button";
+        upgradeBtn.className = "link-button link-button-accent";
+        upgradeBtn.textContent = "Upgrade to Pro";
+        upgradeBtn.addEventListener("click", startCheckout);
+        statusEl.appendChild(document.createElement("br"));
+        statusEl.appendChild(upgradeBtn);
+        submitBtn.disabled = false;
+        return;
+      }
 
       if (!res.ok) {
         const message = (data && data.detail) || `Conversion failed (${res.status}).`;
@@ -108,6 +144,8 @@
 
       setStatus("Done. Your accessible PDF is ready below.", "done");
       renderReport(data);
+      const user = await getCurrentUser();
+      if (user) renderAccountBar(accountBar, user);
     } catch (err) {
       setStatus("Network error — please try again.", "error");
     } finally {
