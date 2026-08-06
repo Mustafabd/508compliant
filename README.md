@@ -23,15 +23,22 @@ stamp. It:
   human description.
 - Sets the document title (from existing metadata, or guessed from the
   filename) and detects/sets the primary language via `langdetect`.
+- Checks every text run's color against its actual painted background
+  (an explicit filled rect if one covers it, otherwise the bare white
+  page) and flags WCAG 2.1 AA contrast failures (4.5:1 normal text, 3:1
+  for 18pt+/14pt+bold) with the page, ratio, threshold, and a text
+  snippet. When the background can't be reliably determined — text over
+  an image, gradient, pattern, or a spot-color (Separation/DeviceN) fill
+  — it's flagged for manual review instead of guessing.
 - Flags pages that look like scanned images with no extractable text —
   it does **not** OCR them; run those through a dedicated OCR tool first.
 
-**What it does not do:** verify color contrast, table headers, form field
-labels, meaningful link text, or bookmarks/outline — and heading levels
-and reading order are heuristic (font size, and content-stream order),
-not a guarantee of semantic correctness. Every conversion returns a report
-that says exactly what needs manual review. Treat the output as a strong
-head start on 508/WCAG compliance, not a certification.
+**What it does not do:** verify table headers, form field labels,
+meaningful link text, or bookmarks/outline — and heading levels and
+reading order are heuristic (font size, and content-stream order), not a
+guarantee of semantic correctness. Every conversion returns a report that
+says exactly what needs manual review. Treat the output as a strong head
+start on 508/WCAG compliance, not a certification.
 
 It's also a small SaaS: accounts, a free tier (3 conversions/month), and a
 Stripe-billed Pro tier (unlimited conversions).
@@ -55,6 +62,7 @@ backend/app/
     tagger.py              builds the StructTreeRoot/ParentTree across the doc
     alttext.py             image alt-text generation (Claude vision, optional)
     metadata.py             title/language detection + XMP/Info metadata
+    contrast.py              WCAG 2.1 AA color-contrast checking per text run
     report.py               builds the human-facing accessibility checklist
     pipeline.py             orchestrates the above end to end
 ```

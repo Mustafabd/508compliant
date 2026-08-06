@@ -227,6 +227,7 @@ button:focus-visible, .download-button:focus-visible {
   color: var(--muted);
   font-size: 0.95rem;
   margin: 0;
+  white-space: pre-line;
 }
 
 .download-button {

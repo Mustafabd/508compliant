@@ -9,8 +9,19 @@ reported as "needs manual review", never claimed as fixed. Overclaiming
 from __future__ import annotations
 
 
+MAX_INLINE_FINDINGS = 10
+
+
+def _format_contrast_finding(f) -> str:
+    snippet = f'"{f.text_preview}"'
+    if f.status == "fail":
+        return f"Page {f.page}: {snippet} — {f.ratio}:1, needs {f.threshold}:1"
+    return f"Page {f.page}: {snippet} — {f.reason}"
+
+
 def build_report(*, filename: str, page_count: int, title: str, title_guessed: bool,
-                  language: str, language_confident: bool, stats, scanned_pages: list) -> dict:
+                  language: str, language_confident: bool, stats, scanned_pages: list,
+                  contrast_stats=None) -> dict:
     checklist = []
 
     checklist.append({
@@ -96,6 +107,52 @@ def build_report(*, filename: str, page_count: int, title: str, title_guessed: b
         )
     checklist.append({"id": "alt_text", "label": "Image alternate text", "status": img_status, "detail": img_detail})
 
+    if contrast_stats is not None:
+        if contrast_stats.checked == 0:
+            cs_status = "pass"
+            cs_detail = "No text runs with a determinable color were found to check."
+        elif contrast_stats.failed > 0:
+            cs_status = "fail"
+            cs_detail = (
+                f"Checked {contrast_stats.checked} text run(s) against WCAG 2.1 AA: "
+                f"{contrast_stats.failed} failed, {contrast_stats.needs_review} could not be "
+                f"automatically verified, {contrast_stats.passed} passed."
+            )
+        elif contrast_stats.needs_review > 0:
+            cs_status = "warning"
+            cs_detail = (
+                f"Checked {contrast_stats.checked} text run(s) against WCAG 2.1 AA: no confirmed "
+                f"failures, but {contrast_stats.needs_review} could not be automatically verified "
+                f"(text over an image/gradient/pattern, or a spot-color fill) and need a manual look."
+            )
+        else:
+            cs_status = "pass"
+            cs_detail = f"Checked {contrast_stats.checked} text run(s) against WCAG 2.1 AA — all passed."
+
+        fails = [f for f in contrast_stats.findings if f.status == "fail"]
+        reviews = [f for f in contrast_stats.findings if f.status == "needs_review"]
+        lines = [cs_detail]
+        shown = fails[:MAX_INLINE_FINDINGS]
+        if shown:
+            lines.append("")
+            lines.extend(_format_contrast_finding(f) for f in shown)
+            if len(fails) > len(shown):
+                lines.append(f"... and {len(fails) - len(shown)} more failure(s).")
+        shown_reviews = reviews[:MAX_INLINE_FINDINGS]
+        if shown_reviews:
+            lines.append("")
+            lines.append("Needs manual review:")
+            lines.extend(_format_contrast_finding(f) for f in shown_reviews)
+            if len(reviews) > len(shown_reviews):
+                lines.append(f"... and {len(reviews) - len(shown_reviews)} more.")
+
+        checklist.append({
+            "id": "color_contrast",
+            "label": "Color contrast (WCAG AA)",
+            "status": cs_status,
+            "detail": "\n".join(lines),
+        })
+
     if scanned_pages:
         checklist.append({
             "id": "scanned",
@@ -114,16 +171,31 @@ def build_report(*, filename: str, page_count: int, title: str, title_guessed: b
         "label": "Not automatically checked",
         "status": "warning",
         "detail": (
-            "This tool does not check color contrast, table row/column headers, form field labels, "
-            "link text meaningfulness, or document outline (bookmarks). Review these manually against "
+            "This tool does not check table row/column headers, form field labels, link text "
+            "meaningfulness, or document outline (bookmarks). Review these manually against "
             "WCAG 2.1 AA / Section 508 before publishing."
         ),
     })
 
-    return {
+    result = {
         "filename": filename,
         "page_count": page_count,
         "title": title,
         "language": language,
         "checklist": checklist,
     }
+    if contrast_stats is not None:
+        result["contrast_findings"] = [
+            {
+                "page": f.page,
+                "status": f.status,
+                "ratio": f.ratio,
+                "threshold": f.threshold,
+                "text_preview": f.text_preview,
+                "font_size": f.font_size,
+                "is_bold": f.is_bold,
+                "reason": f.reason,
+            }
+            for f in contrast_stats.findings
+        ]
+    return result
