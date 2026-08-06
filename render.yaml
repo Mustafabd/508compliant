@@ -5,7 +5,11 @@
 # committed to git). See DEPLOY.md for the full walkthrough.
 databases:
   - name: 508compliant-db
-    plan: starter
+    # Render retired the old "starter"-style Postgres plan names in favor of
+    # sized tiers (basic-256mb, basic-1gb, basic-4gb, pro-4gb, ...).
+    # basic-256mb is the smallest/cheapest paid tier -- bump it later from
+    # the Render dashboard if you outgrow it.
+    plan: basic-256mb
 
 services:
   - type: web
@@ -13,6 +17,8 @@ services:
     runtime: docker
     dockerfilePath: ./Dockerfile
     dockerContext: .
+    # Web service plans are a separate pricing system from database plans
+    # and "starter" is still valid here.
     plan: starter
     envVars:
       - key: ENVIRONMENT
